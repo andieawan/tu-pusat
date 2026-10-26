@@ -1,0 +1,19 @@
+<?php $__env->startSection('content'); ?>
+<div class="head"><div><h1><?php echo e('Cetak Dokumen'); ?></h1><small><?php echo e('Pilih dokumen, lalu Cetak / Simpan sebagai PDF dari halaman pratinjau.'); ?></small></div></div>
+<div class="grid g3" style="align-items:start">
+    <form method="get" action="<?php echo e(route('tu.cetak.hadir')); ?>" class="card" target="_blank"><h2>🗓 Daftar Hadir Kosong</h2><p class="mut" style="font-size:13px">Kolom tanggal satu bulan (hari Minggu dilewati) untuk diisi manual.</p>
+        <div class="field"><label for="a-kelas">Kelas</label><select id="a-kelas" name="kelas" required><?php $__currentLoopData = $kelas; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $c): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?><option value="<?php echo e($c->id); ?>"><?php echo e($c->nama); ?> (<?php echo e($c->aktif_count); ?>)</option><?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?></select></div>
+        <div class="field"><label for="a-bulan">Bulan</label><input id="a-bulan" type="month" name="bulan" value="<?php echo e($bulan); ?>"></div>
+        <button class="btn btn-pri">Buka Pratinjau</button></form>
+    <form method="get" action="<?php echo e(route('tu.cetak.daftar')); ?>" class="card" target="_blank"><h2>📋 Daftar Siswa</h2><p class="mut" style="font-size:13px">Daftar nama per kelas dengan kolom kosong (mis. tanda tangan, nilai, iuran).</p>
+        <div class="field"><label for="b-kelas">Kelas</label><select id="b-kelas" name="kelas" required><?php $__currentLoopData = $kelas; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $c): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?><option value="<?php echo e($c->id); ?>"><?php echo e($c->nama); ?> (<?php echo e($c->aktif_count); ?>)</option><?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?></select></div>
+        <div class="fields"><div><label for="b-kol">Kolom kosong</label><input id="b-kol" type="number" name="kolom" min="0" max="8" value="3"></div><div><label for="b-jd">Judul <small>(opsional)</small></label><input id="b-jd" type="text" name="judul" placeholder="DAFTAR SISWA"></div></div>
+        <button class="btn btn-pri" style="margin-top:12px">Buka Pratinjau</button></form>
+    <form method="get" action="<?php echo e(route('tu.cetak.kartu')); ?>" class="card" target="_blank"><h2>🪪 Kartu Siswa</h2><p class="mut" style="font-size:13px">Kartu identitas sederhana (10 kartu per lembar A4) dengan kotak pas foto.</p>
+        <div class="field"><label for="c-kelas">Kelas</label><select id="c-kelas" name="kelas" required><?php $__currentLoopData = $kelas; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $c): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?><option value="<?php echo e($c->id); ?>"><?php echo e($c->nama); ?> (<?php echo e($c->aktif_count); ?>)</option><?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?></select></div>
+        <button class="btn btn-pri">Buka Pratinjau</button></form>
+</div>
+<p class="hint">Surat keterangan &amp; surat keluar dicetak dari <a href="<?php echo e(route('tu.surat', 'keluar')); ?>">Surat Keluar</a>. Rekap absensi guru dicetak dari <a href="<?php echo e(route('tu.absen.rekap')); ?>">Absen Pegawai → Rekap</a>.</p>
+<?php $__env->stopSection(); ?>
+
+<?php echo $__env->make('layouts.app', ['title' => 'Cetak Dokumen'], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH /home/claude/tu-pusat/resources/views/tu/cetak.blade.php ENDPATH**/ ?>
