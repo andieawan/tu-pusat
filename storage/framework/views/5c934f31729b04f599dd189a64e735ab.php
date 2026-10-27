@@ -1,3 +1,0 @@
-<?php if($cur && ($cur->jam_masuk ?? null)): ?>&nbsp;· masuk <?php echo e($cur->jam_masuk); ?><?php if($cur->jam_pulang): ?> · pulang <?php echo e($cur->jam_pulang); ?><?php endif; ?> <?php if($cur->terlambat): ?> · <span class="warn">terlambat</span><?php endif; ?> <?php if($cur->jarak !== null): ?> · <?php echo e($cur->jarak); ?> m <?php endif; ?> <?php endif; ?>
-<?php if($cur && ($cur->sumber ?? "tu") === "mandiri"): ?>&nbsp;· 📱 mandiri <?php endif; ?>
-<?php /**PATH /home/claude/tu-pusat/resources/views/tu/_jam.blade.php ENDPATH**/ ?>
