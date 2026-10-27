@@ -16,6 +16,12 @@ use Illuminate\Support\Facades\Route;
 // Penerima webhook dari Pusat Sekolah (tanda tangan HMAC; tanpa CSRF — lihat bootstrap/app.php).
 Route::post('/api/pusat/webhook', PusatWebhookController::class)->middleware('throttle:120,1');
 
+// API untuk aplikasi lain (PKL: nomor Surat Keluar). Kunci: TU_API_KUNCI_* di .env.
+Route::middleware(['kunci.api', 'throttle:60,1'])->prefix('api/v1')->group(function () {
+    Route::get('/ping', [\App\Http\Controllers\Api\TuApiController::class, 'ping']);
+    Route::post('/surat-keluar', [\App\Http\Controllers\Api\TuApiController::class, 'suratKeluar']);
+});
+
 // Login: utama lewat Pusat (SSO), admin lokal darurat dengan password.
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'form'])->name('login');

@@ -56,7 +56,7 @@
             <div class="acct-menu" role="menu">
                 <div class="acct-head"><b>{{ $me->nama }}</b><small>{{ '@'.$me->username }} · {{ $me->roleLabel() }}</small></div>
                 @if($me->isAdmin())<a role="menuitem" href="{{ route('admin.integrasi') }}">🔗 Integrasi Pusat</a>@endif
-                @if(config('pusat.url'))<a role="menuitem" href="{{ config('pusat.url') }}">🏫 Pusat Sekolah</a>@endif
+                @include('partials.aplikasi-lain')
                 <form method="post" action="{{ route('logout') }}">@csrf<button class="menu-btn danger" role="menuitem">⎋ Keluar</button></form>
             </div>
         </details>

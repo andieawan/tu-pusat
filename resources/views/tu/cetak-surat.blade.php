@@ -9,9 +9,9 @@
 @endsection
 @section('letter')
 @include('surat._kop')
-@php($judul = $surat->jenis === 'biasa' ? $surat->perihal : mb_strtoupper(\App\Services\TuService::KETERANGAN[$surat->jenis]))
+@php($judul = in_array($surat->jenis, ['biasa', 'pkl'], true) ? $surat->perihal : mb_strtoupper(\App\Services\TuService::KETERANGAN[$surat->jenis]))
 <p style="text-align:center;margin-top:14px"><b><u>{{ mb_strtoupper($judul) }}</u></b><br>Nomor: {{ $surat->nomor ?: '........................' }}</p>
-@if($surat->jenis === 'biasa')
+@if(in_array($surat->jenis, ['biasa', 'pkl'], true))
     @if($surat->pihak)<p>Kepada Yth.<br>{{ $surat->pihak }}</p>@endif
     <p style="white-space:pre-line">{{ $surat->isi ?: '........................................' }}</p>
 @else

@@ -21,7 +21,9 @@ use Illuminate\Support\Facades\Storage;
  */
 class TuService
 {
-    public const KODE = ['biasa' => 'UM', 'aktif' => 'KET', 'pindah' => 'MUT', 'dispensasi' => 'DSP', 'izin' => 'IZN'];
+    public const KODE = ['biasa' => 'UM', 'aktif' => 'KET', 'pindah' => 'MUT', 'dispensasi' => 'DSP', 'izin' => 'IZN', 'pkl' => 'PKL'];
+    /** Surat keluar yang dibuat aplikasi lain lewat API (dicetak di aplikasinya; di TU tercatat seperti surat biasa). */
+    public const DARI_APLIKASI = ['pkl' => 'Surat PKL'];
     public const KETERANGAN = [
         'aktif' => 'Surat Keterangan Siswa Aktif', 'pindah' => 'Surat Keterangan Pindah Sekolah',
         'dispensasi' => 'Surat Dispensasi', 'izin' => 'Surat Izin',
@@ -106,14 +108,14 @@ class TuService
     }
 
     /** Buat surat dengan nomor agenda berikutnya (ulang bila bentrok dengan input bersamaan). */
-    private static function create(User $u, array $data, string $nomorManual = ''): TuSurat
+    private static function create(?User $u, array $data, string $nomorManual = ''): TuSurat
     {
         $tahun = (int) substr($data['tanggal'], 0, 4);
         for ($i = 0; ; $i++) {
             try {
                 $urut = (int) TuSurat::where('arah', $data['arah'])->where('tahun', $tahun)->max('urut') + 1;
                 $nomor = $nomorManual !== '' ? $nomorManual : ($data['arah'] === 'keluar' ? self::nomor($data['jenis'], $urut, $data['tanggal']) : null);
-                $row = TuSurat::create($data + ['urut' => $urut, 'tahun' => $tahun, 'nomor' => $nomor, 'dicatat_oleh' => $u->id]);
+                $row = TuSurat::create($data + ['urut' => $urut, 'tahun' => $tahun, 'nomor' => $nomor, 'dicatat_oleh' => $u?->id]);
                 break;
             } catch (QueryException $e) {
                 if ($i >= 4) {
@@ -121,9 +123,38 @@ class TuService
                 }
             }
         }
-        Audit::catat('Tambah Surat '.ucfirst($data['arah']), $u->nama, "No. agenda {$row->urut}/{$tahun} — {$row->perihal}");
+        Audit::catat('Tambah Surat '.ucfirst($data['arah']), $u?->nama ?? 'Aplikasi '.strtoupper((string) ($data['jenis'] ?? '')), "No. agenda {$row->urut}/{$tahun} — {$row->perihal}");
 
         return $row;
+    }
+
+    /**
+     * Surat keluar dari aplikasi lain (API). Idempoten lewat "ref": permintaan ulang dengan ref yang sama
+     * mengembalikan surat yang sama (nomor tidak terpakai dua kali).
+     */
+    public static function suratDariAplikasi(string $aplikasi, array $in): TuSurat
+    {
+        if (! isset(self::DARI_APLIKASI[$aplikasi])) {
+            throw new UserError('Aplikasi ini tidak boleh membuat surat.');
+        }
+        $ref = mb_substr(trim((string) ($in['ref'] ?? '')), 0, 120);
+        if ($ref === '' || ! preg_match('/^[A-Za-z0-9:._\/-]+$/', $ref)) {
+            throw new UserError('ref wajib diisi (huruf, angka, : . _ / -).');
+        }
+        $ref = $aplikasi.':'.$ref;
+        if ($ada = TuSurat::where('ref', $ref)->first()) {
+            return $ada;
+        }
+        $tanggal = self::date($in, 'tanggal', 'Tanggal surat');
+        $perihal = self::str($in, 'perihal');
+        $pihak = self::str($in, 'pihak');
+        if ($perihal === '' || $pihak === '') {
+            throw new UserError('Tujuan (pihak) dan perihal wajib diisi.');
+        }
+
+        return self::create(null, ['arah' => 'keluar', 'jenis' => $aplikasi, 'tanggal' => $tanggal, 'perihal' => $perihal,
+            'pihak' => $pihak, 'isi' => mb_substr(trim((string) ($in['isi'] ?? '')), 0, 5000) ?: null, 'ref' => $ref,
+            'extra' => ['petugas' => self::str($in, 'petugas', 100) ?: null]]);
     }
 
     /** Surat keterangan/dispensasi/izin untuk seorang siswa; otomatis tercatat di Register Surat Keluar. */

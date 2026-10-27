@@ -28,6 +28,8 @@ class IntegrasiController extends Controller
                 'otomatis' => (bool) config('pusat.sinkron_otomatis'),
                 'ruteUji' => route('admin.integrasi.pusat'), 'ruteSinkron' => route('admin.integrasi.sinkron'),
             ],
+            'apiPkl' => ! empty(config('tu.api_kunci')['pkl'] ?? ''),
+            'suratPkl' => \App\Models\TuSurat::where('jenis', 'pkl')->count(),
         ]);
     }
 

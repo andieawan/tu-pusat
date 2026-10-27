@@ -49,11 +49,11 @@
                     <small>Agenda <span class="mono">{{ $s->urut }}/{{ $s->tahun }}</span>@if($s->nomor) · No. <span class="mono">{{ $s->nomor }}</span>@endif · {{ \App\Support\Dates::human($s->tanggal) }}</small>
                     <small>{{ $arah === 'masuk' ? 'Dari' : 'Kepada' }}: {{ $s->pihak }}@if($s->siswa) · siswa: {{ $s->siswa->nama }}@endif</small></div>
                 <div class="row" style="gap:6px">
-                    @if($s->jenis !== 'biasa')<span class="badge">{{ \App\Services\TuService::KETERANGAN[$s->jenis] ?? $s->jenis }}</span>@endif
+                    @if($s->jenis !== 'biasa')<span class="badge">{{ \App\Services\TuService::KETERANGAN[$s->jenis] ?? \App\Services\TuService::DARI_APLIKASI[$s->jenis] ?? $s->jenis }}</span>@endif
                     @if($s->status)<span @class(['badge', 'b-warn' => $s->status === 'Diproses', 'b-bad' => $s->status === 'Baru', 'b-ok' => $s->status === 'Selesai'])>{{ $s->status }}</span>@endif
                 </div>
             </div>
-            @if($s->isi && $s->jenis === 'biasa')<p class="bk-txt">{{ \Illuminate\Support\Str::limit($s->isi, 220) }}</p>@endif
+            @if($s->isi && in_array($s->jenis, ['biasa', 'pkl'], true))<p class="bk-txt">{{ \Illuminate\Support\Str::limit($s->isi, 220) }}</p>@endif
             @if($s->disposisi)<p class="bk-txt"><b>Disposisi:</b> {{ $s->disposisi }}</p>@endif
             <div class="row" style="margin-top:8px;gap:6px">
                 @if($arah === 'keluar')<a class="btn btn-sm" target="_blank" href="{{ route('tu.surat.cetak', $s) }}">🖨 Cetak</a>@endif

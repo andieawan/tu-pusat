@@ -7,6 +7,9 @@ return [
     // Singkatan sekolah pada nomor surat keluar: 001/KET/SMKIBU/X/2026
     'kode_surat' => env('KODE_SURAT', 'SMKIBU'),
 
+    // Kunci API aplikasi lain yang boleh meminta nomor Surat Keluar (PKL). Buat: openssl rand -hex 32. Kosong = tertutup.
+    'api_kunci' => array_filter(['pkl' => env('TU_API_KUNCI_PKL', '')]),
+
 
     // Admin lokal darurat (tu:buat-admin). Login normal lewat Pusat.
     'login_lokal' => (bool) env('TU_LOGIN_LOKAL', true),
