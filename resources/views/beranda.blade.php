@@ -12,7 +12,7 @@
 </div>
 
 <div class="quick">
-    @if($w)<a class="quick-item primary" href="{{ route('tu.absen') }}"><span class="bk-ic" aria-hidden="true">🗓</span><span><b>Absensi Guru &amp; Staf</b><small>Isi kehadiran hari ini</small></span></a>@endif
+    @if($w)<a class="quick-item primary" href="{{ route('tu.absen') }}"><span class="bk-ic" aria-hidden="true">📅</span><span><b>Absensi Guru &amp; Staf</b><small>Isi kehadiran hari ini</small></span></a>@endif
     <a class="quick-item" href="{{ route('tu.mutasi') }}"><span class="bk-ic" aria-hidden="true">🔁</span><span><b>Mutasi Siswa</b><small>Masuk &amp; keluar</small></span></a>
     <a class="quick-item" href="{{ route('tu.surat', 'keluar') }}"><span class="bk-ic" aria-hidden="true">📤</span><span><b>Surat Keluar</b><small>{{ $keluarBulan }} surat bulan ini</small></span></a>
     <a class="quick-item" href="{{ route('tu.surat', 'masuk') }}"><span class="bk-ic" aria-hidden="true">📥</span><span><b>Surat Masuk</b><small>Register &amp; disposisi</small></span></a>
