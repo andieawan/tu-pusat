@@ -17,6 +17,7 @@ class PusatSync
     /** @return array{kelas:array,siswa:array,pegawai:array,tahun_aktif:?string} */
     public function jalankan(): array
     {
+        Sambungan::tarikAman(); // sambungan antar-aplikasi ikut diperbarui setiap sinkron
         $tahun = PusatKlien::semua('tahun-ajaran');
         $kelas = PusatKlien::semua('kelas');
         $siswa = PusatKlien::semua('siswa');
