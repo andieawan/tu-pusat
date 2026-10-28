@@ -12,7 +12,7 @@ class User extends Authenticatable
 
     protected function casts(): array
     {
-        return ['roles' => 'array', 'aktif' => 'boolean', 'password' => 'hashed'];
+        return ['roles' => 'array', 'aktif' => 'boolean', 'admin_pusat' => 'boolean', 'password' => 'hashed'];
     }
 
     public function hasRole(string ...$r): bool

@@ -43,12 +43,14 @@
         }
         if (\App\Services\AbsenService::pegawaiSaya($me)) { $tabs[] = ['absen.saya', [], 'Absen Saya', 'i-clock', request()->routeIs('absen.saya')]; }
         if ($me->isAdmin()) { $tabs[] = ['admin.pengaturan', [], 'Pengaturan', 'i-gear', request()->routeIs('admin.*')]; }
+        // Operator TU / superadmin Pusat: pintas ke panel Administrasi Pusat (data induk, impor, buat akun).
+        if ($me->admin_pusat && \App\Services\PusatKlien::aktif()) { $tabs[] = [rtrim((string) config('pusat.url'), '/').'/admin', [], 'Administrasi', 'i-folder', false]; }
     @endphp
     <header class="nav"><div class="nav-in">
         <a class="brand" href="{{ route('beranda') }}"><img class="logo-img" src="{{ asset('icons/icon-192.png') }}?v={{ @filemtime(public_path('icons/icon-192.png')) }}" alt="" width="36" height="36"><span><b>Tata Usaha</b><small>{{ config('tu.school_name') }}</small></span></a>
         <nav class="tabs" aria-label="Menu utama">
             @foreach($tabs as [$r, $arg, $label, $icon, $on])
-                <a href="{{ route($r, $arg) }}" @if($on) class="on" aria-current="page" @endif><svg class="ic"><use href="#{{ $icon }}"/></svg>{{ $label }}</a>
+                <a href="{{ str_starts_with($r, 'http') ? $r : route($r, $arg) }}" @if($on) class="on" aria-current="page" @endif><svg class="ic"><use href="#{{ $icon }}"/></svg>{{ $label }}</a>
             @endforeach
         </nav>
         <details class="acct" data-close-outside>

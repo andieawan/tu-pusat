@@ -50,6 +50,9 @@ class PusatAkun
         if (! empty($info['email'])) {
             $data['email'] = (string) $info['email'];
         }
+        if (array_key_exists('admin_pusat', $info) && \Illuminate\Support\Facades\Schema::hasColumn('users', 'admin_pusat')) {
+            $data['admin_pusat'] = (bool) $info['admin_pusat']; // menu "Administrasi" → panel Pusat
+        }
         if (! $user) {
             $user = User::create($data + ['username' => $username, 'aktif' => true]);
             Audit::catat('Akun dari Pusat', $user->nama, 'Akun dibuat otomatis saat login pertama lewat Pusat, peran: '.implode(', ', $peran));
@@ -122,6 +125,10 @@ class PusatAkun
             if ($user->password_pusat !== $h) {
                 $ubah['password_pusat'] = $h;
             }
+        }
+        if (array_key_exists('admin_pusat', $data) && \Illuminate\Support\Facades\Schema::hasColumn('users', 'admin_pusat')
+            && (bool) $user->admin_pusat !== (bool) $data['admin_pusat']) {
+            $ubah['admin_pusat'] = (bool) $data['admin_pusat'];
         }
         $username = strtolower(trim((string) ($data['username'] ?? '')));
         if ($username !== '' && $username !== strtolower((string) $user->username)

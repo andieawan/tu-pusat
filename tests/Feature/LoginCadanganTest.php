@@ -64,4 +64,13 @@ class LoginCadanganTest extends TestCase
         $this->post('/login', ['username' => 'g001', 'password' => 'Rahasia12345'])->assertRedirect();
         $this->assertAuthenticated();
     }
+
+    public function test_menu_administrasi_untuk_operator_tu(): void
+    {
+        $peran = array_key_first((array) config('pusat.peran_peta'));
+        $u = User::create(['username' => 'staf.tu', 'nama' => 'Staf', 'roles' => [config('pusat.peran_peta')[$peran]], 'aktif' => true, 'pusat_uuid' => 'a-7']);
+        $this->actingAs($u)->get('/')->assertDontSee('https://p.test/admin');
+        $this->kirim('akun.diperbarui', ['uuid' => 'a-7', 'username' => 'staf.tu', 'aktif' => true, 'peran' => [$peran], 'admin_pusat' => true], 'd9')->assertOk();
+        $this->actingAs($u->fresh())->get('/')->assertSee('https://p.test/admin')->assertSee('Administrasi');
+    }
 }
