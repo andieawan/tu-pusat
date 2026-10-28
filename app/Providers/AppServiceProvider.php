@@ -19,6 +19,11 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        // Mutasi yang tertunda karena Pusat mati dikirim ulang setelah respons selesai (tanpa perlu cron).
+        if (config('pusat.enabled') && ! $this->app->runningInConsole()) {
+            $this->app->terminating(fn () => \App\Services\PusatAntrean::kirimBilaPerlu());
+        }
+
         // Sambungan antar-aplikasi dari Pusat (Administrasi → Sambungan) menimpa nilai .env.
         \App\Services\Sambungan::terapkan();
         \App\Services\ProfilPusat::terapkan(); // kop surat & kepala sekolah dari Profil Sekolah di Pusat

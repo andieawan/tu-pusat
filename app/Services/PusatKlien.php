@@ -22,6 +22,16 @@ class PusatKlien
         return Schema::hasColumn('users', 'pusat_uuid') && Schema::hasTable('pusat_state');
     }
 
+    /** Cek cepat Pusat hidup (dipakai sebelum mengarahkan ke login Pusat). */
+    public static function hidup(): bool
+    {
+        try {
+            return self::http()->timeout(4)->connectTimeout(3)->get('/api/v1/ping')->successful();
+        } catch (\Throwable) {
+            return false;
+        }
+    }
+
     public static function http(): PendingRequest
     {
         return Http::baseUrl(config('pusat.url'))
@@ -45,7 +55,10 @@ class PusatKlien
             $res = self::http()->{$metode}($path, $data);
         } catch (\Throwable $e) {
             report($e);
-            throw new \App\Exceptions\UserError('Pusat tidak dapat dihubungi, tidak ada data yang berubah. Coba lagi sebentar lagi.');
+            throw new \App\Exceptions\PusatMati('Pusat tidak dapat dihubungi.');
+        }
+        if ($res->status() >= 500 || in_array($res->status(), [408, 429], true)) {
+            throw new \App\Exceptions\PusatMati('Pusat sedang bermasalah (HTTP '.$res->status().').');
         }
         if (! $res->successful()) {
             $pesan = (string) ($res->json('error.pesan') ?: 'HTTP '.$res->status());

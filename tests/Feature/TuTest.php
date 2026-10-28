@@ -128,4 +128,34 @@ class TuTest extends TestCase
         $this->get('/cetak/daftar-siswa?kelas='.$this->kelas->id)->assertOk()->assertSee('1001');
         $this->get('/cetak/kartu?kelas='.$this->kelas->id)->assertOk()->assertSee('KARTU SISWA');
     }
+
+    public function test_pusat_mati_mutasi_diantrekan_lalu_terkirim(): void
+    {
+        Http::fake(fn () => throw new \Illuminate\Http\Client\ConnectionException('mati'));
+        $tu = $this->user('tu', ['tu']);
+        $this->actingAs($tu)
+            ->post('/mutasi/masuk', ['nis' => '2001', 'nama' => 'Sari', 'jk' => 'P', 'kelas_id' => $this->kelas->id, 'tanggal' => date('Y-m-d'), 'sekolah' => 'SMK Lain'])
+            ->assertRedirect(route('tu.mutasi'))->assertSessionHas('warning');
+        $baru = Siswa::where('nis', '2001')->firstOrFail();
+        $this->assertStringStartsWith('lokal-', $baru->pusat_uuid);
+        $this->post('/mutasi/keluar', ['siswa_id' => $this->siswa->id, 'status' => 'pindah', 'tanggal' => date('Y-m-d'), 'sekolah' => 'SMK Tujuan'])
+            ->assertSessionHas('warning');
+        $this->assertSame('pindah', $this->siswa->fresh()->status);
+        $this->assertSame(2, \App\Services\PusatAntrean::jumlah());
+
+        // webhook lama dari Pusat tidak mengembalikan status yang belum terkirim
+        \App\Services\PusatSync::upsertSiswa(['uuid' => 's1', 'status' => 'aktif', 'nama' => 'Budi']);
+        $this->assertSame('pindah', $this->siswa->fresh()->status);
+
+        // Pusat hidup lagi
+        Http::swap(new \Illuminate\Http\Client\Factory);
+        Http::fake([
+            'pusat.test/api/v1/siswa/s1' => Http::response(['data' => ['uuid' => 's1', 'status' => 'pindah', 'kelas_uuid' => 'k1']]),
+            'pusat.test/api/v1/siswa' => Http::response(['data' => ['uuid' => 'u-sari', 'nis' => '2001', 'nama' => 'Sari', 'jenis_kelamin' => 'P', 'status' => 'aktif', 'kelas_uuid' => 'k1']], 201),
+        ]);
+        $h = \App\Services\PusatAntrean::kirim();
+        $this->assertSame(['terkirim' => 2, 'sisa' => 0], $h);
+        $this->assertSame('u-sari', $baru->fresh()->pusat_uuid);
+        $this->assertSame('pindah', $this->siswa->fresh()->status);
+    }
 }

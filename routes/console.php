@@ -4,6 +4,8 @@ use Illuminate\Support\Facades\Schedule;
 
 // Cron wajib di VM: * * * * * cd /var/www/tu-pusat && php artisan schedule:run >> /dev/null 2>&1
 Schedule::command('tu:bersihkan')->dailyAt('02:30');
+// Mutasi siswa yang tertunda karena Pusat mati dicoba ulang tiap 5 menit.
+Schedule::call(fn () => \App\Services\PusatAntrean::kirim())->name('pusat-antrean')->everyFiveMinutes()->withoutOverlapping();
 // Sinkron penuh tiap jam bila dihidupkan, atau bila webhook menandai ada data yang perlu dilengkapi (kelas belum dikenal).
 Schedule::command('tu:sinkron')->hourly()->withoutOverlapping(30)->when(function () {
     try {

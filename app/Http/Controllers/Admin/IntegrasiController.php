@@ -25,6 +25,8 @@ class IntegrasiController extends Controller
                 'terakhir' => $siap ? PusatKlien::baca('sinkron_terakhir') : null,
                 'jumlah' => ['kelas' => $siap ? Kelas::count() : 0, 'siswa aktif' => $siap ? Siswa::aktif()->count() : 0, 'guru & staf aktif' => $siap ? Pegawai::aktif()->count() : 0],
                 'perluSinkron' => $siap && PusatKlien::baca('perlu_sinkron') !== null,
+                'antrean' => \App\Services\PusatAntrean::daftar(),
+                'antreanJumlah' => \App\Services\PusatAntrean::jumlah(),
                 'otomatis' => (bool) config('pusat.sinkron_otomatis'),
                 'ruteUji' => route('admin.integrasi.pusat'), 'ruteSinkron' => route('admin.integrasi.sinkron'),
             ],

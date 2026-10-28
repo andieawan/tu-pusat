@@ -36,6 +36,9 @@ class TuService
         'keluar' => ['Dikeluarkan', 'keluar'],
         'nonaktif' => ['Lainnya', 'keluar'],
     ];
+    /** true bila mutasi terakhir belum terkirim ke Pusat (diantrekan). */
+    public static bool $tertunda = false;
+
     public const BULAN = ['', 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
     private const ROMAWI = ['', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'];
 
@@ -234,15 +237,27 @@ class TuService
         }
         $kelas = Kelas::whereNull('dihapus_pada')->find((int) ($in['kelas_id'] ?? 0)) ?? throw new UserError('Pilih kelas tujuan.');
 
-        $data = PusatKlien::tulis('post', '/api/v1/siswa', array_filter([
+        if (Siswa::where('nis', $nis)->where('status', 'aktif')->exists()) {
+            throw new UserError("NIS $nis sudah dipakai siswa aktif.");
+        }
+        $kirim = array_filter([
             'nis' => $nis, 'nama' => $nama, 'jenis_kelamin' => $jk, 'kelas_uuid' => $kelas->pusat_uuid,
             'nisn' => self::str($in, 'nisn', 20), 'tempat_lahir' => self::str($in, 'tempat_lahir', 100),
             'tanggal_lahir' => Dates::valid((string) ($in['tanggal_lahir'] ?? '')) ? $in['tanggal_lahir'] : null,
             'nama_ortu' => self::str($in, 'nama_ortu', 150), 'no_hp_ortu' => self::str($in, 'no_hp_ortu', 30), 'petugas' => $u->nama,
-        ], fn ($v) => $v !== null && $v !== ''));
+        ], fn ($v) => $v !== null && $v !== '');
+        try {
+            $data = PusatKlien::tulis('post', '/api/v1/siswa', $kirim);
+        } catch (\App\Exceptions\PusatMati $e) {
+            // Pusat mati: siswa dicatat di TU dengan UUID sementara, dikirim ke Pusat otomatis nanti.
+            $data = ['uuid' => PusatAntrean::uuidLokal(), 'status' => 'aktif'] + $kirim;
+            unset($data['petugas']);
+            PusatAntrean::antre('siswa_baru', $data['uuid'], $kirim, $e->getMessage());
+            self::$tertunda = true;
+        }
 
         return DB::transaction(function () use ($u, $in, $data, $tanggal, $sekolah, $kelas) {
-            PusatSync::upsertSiswa($data, true);
+            PusatSync::upsertSiswa($data, true, true);
             $s = Siswa::where('pusat_uuid', $data['uuid'])->firstOrFail();
             MutasiSiswa::create(['jenis' => 'masuk', 'siswa_id' => $s->id, 'kelas_id' => $kelas->id, 'tanggal' => $tanggal, 'sekolah' => $sekolah,
                 'alasan' => self::str($in, 'alasan') ?: null, 'nomor_surat' => self::str($in, 'nomor_surat', 80) ?: null, 'dicatat_oleh' => $u->id]);
@@ -269,11 +284,21 @@ class TuService
             throw new UserError('Sekolah tujuan wajib diisi untuk siswa yang pindah.');
         }
 
-        $data = PusatKlien::tulis('patch', '/api/v1/siswa/'.$s->pusat_uuid, ['status' => self::ALASAN_KELUAR[$alasan][1], 'petugas' => $u->nama]);
+        $kirim = ['status' => self::ALASAN_KELUAR[$alasan][1], 'petugas' => $u->nama];
+        try {
+            if (str_starts_with((string) $s->pusat_uuid, PusatAntrean::LOKAL)) {
+                throw new \App\Exceptions\PusatMati('Siswa belum terkirim ke Pusat.');
+            }
+            $data = PusatKlien::tulis('patch', '/api/v1/siswa/'.$s->pusat_uuid, $kirim);
+        } catch (\App\Exceptions\PusatMati $e) {
+            PusatAntrean::antre('siswa_status', (string) $s->pusat_uuid, $kirim, $e->getMessage());
+            $data = ['uuid' => $s->pusat_uuid, 'status' => $kirim['status']];
+            self::$tertunda = true;
+        }
 
         return DB::transaction(function () use ($u, $in, $s, $data, $alasan, $tanggal, $sekolah, $buatSurat) {
             $kelasId = $s->kelas_id;
-            PusatSync::upsertSiswa($data, true);
+            PusatSync::upsertSiswa($data, true, true);
             $m = MutasiSiswa::create(['jenis' => 'keluar', 'siswa_id' => $s->id, 'kelas_id' => $kelasId, 'tanggal' => $tanggal, 'sekolah' => $sekolah ?: null,
                 'alasan' => self::str($in, 'alasan') ?: null, 'status_baru' => $alasan, 'dicatat_oleh' => $u->id]);
             Audit::catat('Mutasi Keluar', $u->nama, "{$s->nama} (NIS {$s->nis}) — ".self::alasanLabel($alasan).($sekolah ? " → $sekolah" : ''));

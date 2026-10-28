@@ -35,14 +35,22 @@ class MutasiController extends Controller
     {
         $s = TuService::mutasiMasuk($this->me(), $request->all());
 
+        if (TuService::$tertunda) {
+            return redirect()->route('tu.mutasi')->with('success', "Siswa masuk {$s->nama} tercatat di TU (kelas ".($s->kelas->nama ?? '-').').')
+                ->with('warning', 'Pusat Sekolah sedang tidak bisa dihubungi; data siswa ini akan dikirim ke Pusat otomatis begitu Pusat hidup.');
+        }
+
         return redirect()->route('tu.mutasi')->with('success', "Siswa masuk {$s->nama} tercatat di Pusat dan ditambahkan ke kelas ".($s->kelas->nama ?? '-').'.');
     }
 
     public function keluar(Request $request)
     {
         [$m, $surat] = TuService::mutasiKeluar($this->me(), $request->all(), $request->boolean('buat_surat'));
-        $back = redirect()->route('tu.mutasi')->with('success', "Mutasi keluar {$m->siswa->nama} tercatat di Pusat (".TuService::alasanLabel($m->status_baru).').'
+        $back = redirect()->route('tu.mutasi')->with('success', "Mutasi keluar {$m->siswa->nama} tercatat ".(TuService::$tertunda ? 'di TU' : 'di Pusat').' ('.TuService::alasanLabel($m->status_baru).').'
             .($surat ? " Surat keterangan pindah bernomor {$surat->nomor} dibuat." : ''));
+        if (TuService::$tertunda) {
+            $back->with('warning', 'Pusat Sekolah sedang tidak bisa dihubungi; perubahan status akan dikirim ke Pusat otomatis begitu Pusat hidup.');
+        }
 
         return $surat ? $back->with('print_url', route('tu.surat.cetak', $surat)) : $back;
     }

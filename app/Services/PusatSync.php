@@ -17,6 +17,7 @@ class PusatSync
     /** @return array{kelas:array,siswa:array,pegawai:array,tahun_aktif:?string} */
     public function jalankan(): array
     {
+        PusatAntrean::kirim(); // mutasi tertunda dikirim dulu agar tidak tertimpa data lama dari Pusat
         Sambungan::tarikAman(); // sambungan antar-aplikasi ikut diperbarui setiap sinkron
         ProfilPusat::tarikAman(); // profil sekolah (kop surat, kepala sekolah, logo)
         $tahun = PusatKlien::semua('tahun-ajaran');
@@ -57,7 +58,7 @@ class PusatSync
                 $ada[$p['uuid']] = true;
                 $h['siswa'][self::upsertSiswa($p, true)]++;
             }
-            foreach (Siswa::where('status', 'aktif')->get(['id', 'pusat_uuid']) as $s) {
+            foreach (Siswa::where('status', 'aktif')->where('pusat_uuid', 'not like', PusatAntrean::LOKAL.'%')->get(['id', 'pusat_uuid']) as $s) {
                 if (! isset($ada[$s->pusat_uuid])) {
                     Siswa::whereKey($s->id)->update(['status' => 'keluar']);
                     $h['siswa']['keluar']++;
@@ -121,8 +122,12 @@ class PusatSync
     }
 
     /** @return 'baru'|'ubah'|'sama' */
-    public static function upsertSiswa(array $p, bool $terkini = false): string
+    /** $lokal: perubahan dari TU sendiri (boleh menimpa status yang masih menunggu dikirim ke Pusat). */
+    public static function upsertSiswa(array $p, bool $terkini = false, bool $lokal = false): string
     {
+        if (! $lokal && PusatAntrean::ada('siswa_status', (string) ($p['uuid'] ?? ''))) {
+            unset($p['status'], $p['dihapus']); // mutasi keluar di TU belum terkirim ke Pusat: jangan dikembalikan ke status lama
+        }
         $lama = Siswa::where('pusat_uuid', $p['uuid'])->first();
         $versi = self::versi($p);
         if (! $terkini && self::kedaluwarsa($lama, $versi)) { // sinkron penuh = keadaan terkini Pusat, selalu diterapkan
