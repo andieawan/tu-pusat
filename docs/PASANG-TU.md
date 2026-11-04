@@ -51,12 +51,12 @@ sudo -u www-data php artisan tu:sinkron      # salin kelas, siswa, guru & staf d
 ## 5. Pengaturan absen mandiri (Admin → Pengaturan)
 Aktif/mati, batas jam masuk (lewat = terlambat), dan opsional titik koordinat + radius sekolah (absen hanya bisa di sekolah).
 
-## 6. Mematikan modul TU lama di Absensi
-Setelah TU berjalan, isi `TU_URL=https://tu.smkibupakusari.sch.id` di `.env` Absensi lalu `config:clear`.
-Menu TU dan "Absen Saya" di Absensi berubah menjadi tautan ke aplikasi TU.
+## 6. Arahkan menu TU di Jurnal ke aplikasi TU
+Jurnal Guru masih punya menu TU bawaan. Setelah TU berjalan, isi `TU_URL=https://tu.smkibupakusari.sch.id` di `.env` Jurnal
+lalu `sudo -u www-data php artisan config:clear`: menu TU dan "Absen Saya" di Jurnal berubah menjadi tautan ke aplikasi TU.
 
 ## Catatan mutasi
-- **Siswa masuk**: data siswa ditambahkan di **Pusat**, lalu Absensi, BK, dan aplikasi lain menerimanya lewat webhook.
+- **Siswa masuk**: data siswa ditambahkan di **Pusat**, lalu Jurnal, BK, dan aplikasi lain menerimanya lewat webhook.
 - **Siswa keluar**: status siswa di Pusat diubah (pindah/keluar); surat keterangan pindah bisa dibuat sekaligus.
 - Bila Pusat tidak terjangkau atau menolak (mis. NIS sudah dipakai), tidak ada yang berubah dan pesannya ditampilkan.
 - Nama, NIS, dan data pribadi siswa tetap diubah di panel Pusat.
