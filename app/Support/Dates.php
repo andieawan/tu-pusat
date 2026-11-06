@@ -75,13 +75,6 @@ class Dates
         return (int) floor(microtime(true) * 1000);
     }
 
-    public static function isoUtc(?int $millis = null): string
-    {
-        $millis ??= self::nowMillis();
-
-        return gmdate('Y-m-d\TH:i:s', intdiv($millis, 1000)).sprintf('.%03dZ', $millis % 1000);
-    }
-
     public static function local(int $millis): string
     {
         return CarbonImmutable::createFromTimestampMs($millis)->setTimezone(self::tz())->format('j/n/Y H.i');

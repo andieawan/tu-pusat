@@ -113,15 +113,6 @@ class Xlsx
         ]);
     }
 
-    /** Baris pertama = header (huruf kecil); kembalikan [header, baris...]. */
-    public static function readWithHeader(string $path, string $name): array
-    {
-        $rows = self::readFile($path, $name);
-        $hdr = array_map(fn ($v) => strtolower(trim((string) $v)), array_shift($rows) ?? []);
-
-        return [$hdr, $rows];
-    }
-
     public static function col(array $hdr, array $names): ?int
     {
         foreach ($names as $n) {
@@ -142,15 +133,6 @@ class Xlsx
         if ($ext === 'csv' || $ext === 'txt') return self::readCsv($path);
         if ($ext !== 'xlsx') throw new UserError('Format berkas harus .xlsx atau .csv.');
         return self::readXlsx($path)[0] ?? [];
-    }
-
-    /** Semua sheet berkas: daftar baris per sheet (CSV = satu sheet). @return array<int, array<int, array<int, string>>> */
-    public static function readAllSheets(string $path, string $originalName): array
-    {
-        $ext = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
-        if ($ext === 'csv' || $ext === 'txt') return [self::readCsv($path)];
-        if ($ext !== 'xlsx') throw new UserError('Format berkas harus .xlsx atau .csv.');
-        return self::readXlsx($path, true);
     }
 
     private static function readCsv(string $path): array
