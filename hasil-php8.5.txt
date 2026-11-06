@@ -5,6 +5,6 @@ Configuration: /home/runner/work/tu-pusat/tu-pusat/phpunit.xml
 
 ........................                                          24 / 24 (100%)
 
-Time: 00:03.242, Memory: 58.50 MB
+Time: 00:03.167, Memory: 58.50 MB
 
 OK (24 tests, 160 assertions)
