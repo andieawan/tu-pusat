@@ -40,6 +40,7 @@
             $tabs[] = ['tu.mutasi', [], 'Mutasi', 'i-users', request()->routeIs('tu.mutasi*')];
             $tabs[] = ['tu.absen', [], 'Absen Pegawai', 'i-check', request()->routeIs('tu.absen*')];
             $tabs[] = ['tu.cetak', [], 'Cetak', 'i-star', request()->routeIs('tu.cetak*')];
+            if ($me->bisaUbah()) { $tabs[] = ['tu.impor', [], 'Impor', 'i-folder', request()->routeIs('tu.impor*')]; }
         }
         if (\App\Services\AbsenService::pegawaiSaya($me)) { $tabs[] = ['absen.saya', [], 'Absen Saya', 'i-clock', request()->routeIs('absen.saya')]; }
         if ($me->isAdmin()) { $tabs[] = ['admin.pengaturan', [], 'Pengaturan', 'i-gear', request()->routeIs('admin.*')]; }

@@ -34,7 +34,8 @@ class Xlsx
     }
 
     /**
-     * @param array<string, array<int, array<int, string|int|float|null>>> $sheets nama sheet => baris (baris pertama = header)
+     * @param array<string, array<int, array<int, string|int|float|null>>> $sheets nama sheet => baris (baris pertama = header),
+     *        atau nama sheet => ['rows' => baris, 'tebal' => [indeks baris tebal]] untuk judul/kop di atas header
      * @return string biner xlsx
      */
     public static function build(array $sheets): string
@@ -54,7 +55,11 @@ class Xlsx
             $ct .= "<Override PartName=\"/xl/worksheets/sheet$n.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml\"/>";
             $wb .= '<sheet name="' . self::x($safe) . "\" sheetId=\"$n\" r:id=\"rId$n\"/>";
             $rels .= "<Relationship Id=\"rId$n\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet\" Target=\"worksheets/sheet$n.xml\"/>";
-            $zip->addFromString("xl/worksheets/sheet$n.xml", self::sheet($rows));
+            $tebal = [0];
+            if (isset($rows['rows'])) {
+                [$tebal, $rows] = [(array) ($rows['tebal'] ?? [0]), $rows['rows']];
+            }
+            $zip->addFromString("xl/worksheets/sheet$n.xml", self::sheet($rows, $tebal));
         }
         $rels .= "<Relationship Id=\"rId" . ($n + 1) . '" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>';
         $zip->addFromString('[Content_Types].xml', $ct . '</Types>');
@@ -68,10 +73,13 @@ class Xlsx
         return $bin;
     }
 
-    private static function sheet(array $rows): string
+    private static function sheet(array $rows, array $tebal = [0]): string
     {
         $widths = [];
-        foreach ($rows as $r) {
+        foreach (array_values($rows) as $ri => $r) {
+            if (count($r) === 1 && in_array($ri, $tebal, true) && $ri < max($tebal)) {
+                continue; // baris judul satu sel tidak melebarkan kolom
+            }
             foreach (array_values($r) as $i => $v) {
                 $widths[$i] = max($widths[$i] ?? 8, min(60, mb_strlen((string) $v) + 2));
             }
@@ -87,10 +95,11 @@ class Xlsx
             $xml .= '<row r="' . ($ri + 1) . '">';
             foreach (array_values($r) as $ci => $v) {
                 $ref = self::colName($ci) . ($ri + 1);
-                $style = $ri === 0 ? ' s="1"' : '';
+                $isTebal = in_array($ri, $tebal, true);
+                $style = $isTebal ? ' s="1"' : '';
                 if ($v === null || $v === '') {
-                    if ($ri === 0) $xml .= "<c r=\"$ref\"$style/>";
-                } elseif ((is_int($v) || is_float($v)) && $ri > 0) {
+                    if ($isTebal) $xml .= "<c r=\"$ref\"$style/>";
+                } elseif ((is_int($v) || is_float($v)) && ! $isTebal) {
                     $xml .= "<c r=\"$ref\"$style><v>" . $v . '</v></c>';
                 } else {
                     $xml .= "<c r=\"$ref\"$style t=\"inlineStr\"><is><t xml:space=\"preserve\">" . self::x((string) $v) . '</t></is></c>';
@@ -133,6 +142,15 @@ class Xlsx
         if ($ext === 'csv' || $ext === 'txt') return self::readCsv($path);
         if ($ext !== 'xlsx') throw new UserError('Format berkas harus .xlsx atau .csv.');
         return self::readXlsx($path)[0] ?? [];
+    }
+
+    /** Semua sheet berkas: daftar baris per sheet (CSV = satu sheet). @return array<int, array<int, array<int, string>>> */
+    public static function readAllSheets(string $path, string $originalName): array
+    {
+        $ext = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
+        if ($ext === 'csv' || $ext === 'txt') return [self::readCsv($path)];
+        if ($ext !== 'xlsx') throw new UserError('Format berkas harus .xlsx atau .csv.');
+        return self::readXlsx($path, true);
     }
 
     private static function readCsv(string $path): array

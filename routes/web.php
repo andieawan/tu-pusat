@@ -9,6 +9,7 @@ use App\Http\Controllers\PusatSsoController;
 use App\Http\Controllers\PusatWebhookController;
 use App\Http\Controllers\Tu\AbsenController;
 use App\Http\Controllers\Tu\CetakController;
+use App\Http\Controllers\Tu\ImporController;
 use App\Http\Controllers\Tu\MutasiController;
 use App\Http\Controllers\Tu\SuratController;
 use Illuminate\Support\Facades\Route;
@@ -64,6 +65,9 @@ Route::middleware(['auth', 'akun.aktif'])->group(function () {
         Route::post('/mutasi/masuk', [MutasiController::class, 'masuk'])->middleware('throttle:20,1')->name('mutasi.masuk');
         Route::post('/mutasi/keluar', [MutasiController::class, 'keluar'])->middleware('throttle:20,1')->name('mutasi.keluar');
         Route::post('/absen-pegawai', [AbsenController::class, 'store'])->name('absen.simpan');
+        Route::get('/impor', [ImporController::class, 'index'])->name('impor');
+        Route::get('/impor/templat', [ImporController::class, 'templat'])->name('impor.templat');
+        Route::post('/impor', [ImporController::class, 'unggah'])->middleware('throttle:20,1')->name('impor.unggah');
     });
 
     Route::middleware('tu:admin')->prefix('admin')->name('admin.')->group(function () {
