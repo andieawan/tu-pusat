@@ -9,7 +9,7 @@ Schedule::call(fn () => \App\Services\PusatAntrean::kirim())->name('pusat-antrea
 // Sinkron penuh tiap jam bila dihidupkan, atau bila webhook menandai ada data yang perlu dilengkapi (kelas belum dikenal).
 Schedule::command('tu:sinkron')->hourly()->withoutOverlapping(30)->when(function () {
     try {
-        return (bool) config('pusat.sinkron_otomatis') || \App\Services\PusatKlien::baca('perlu_sinkron') !== null;
+        return (bool) config('pusat.sinkron_otomatis');
     } catch (\Throwable) {
         return false;
     }
@@ -19,6 +19,17 @@ Schedule::command('tu:sinkron')->hourly()->withoutOverlapping(30)->when(function
 Schedule::command('tu:sinkron')->everyFifteenMinutes()->withoutOverlapping(30)->when(function () {
     try {
         return \App\Services\PusatKlien::aktif() && \App\Services\PusatKlien::siap() && \App\Services\PusatKlien::baca('sinkron_terakhir') === null;
+    } catch (\Throwable) {
+        return false;
+    }
+});
+
+// Ada perubahan dari Pusat yang perlu ditarik (permintaan sinkron dari Pusat, atau data yang belum dikenal):
+// sinkron penuh dalam ±1 menit tanpa menunggu admin. Paling sering sekali per 5 menit bila gagal/berulang.
+Schedule::command('tu:sinkron')->everyMinute()->withoutOverlapping(30)->when(function () {
+    try {
+        return \App\Services\PusatKlien::aktif() && \App\Services\PusatKlien::baca('perlu_sinkron') !== null
+            && \Illuminate\Support\Facades\Cache::add('pusat-sinkron-diminta', 1, 300);
     } catch (\Throwable) {
         return false;
     }
